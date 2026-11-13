@@ -1,66 +1,79 @@
-# NOVA for mobile
+# NOVA
 
-Native Flutter client for Android phones, iPhones, and tablets. **Fully
-account-free**: every provider is called directly from the device and there is
-no server dependency of any kind.
+**A bilingual media experience for Android and iOS, built with Flutter.**
 
-## Highlights
+[Download for Android](https://github.com/novastremio/nova-mobile/releases/latest) · [Watch Party](docs/watch-party/README.md) · [Shared collections](docs/shared-collections/README.md)
 
-- **No login, ever.** No account, no pairing, no server. Install and watch.
-- **Built-in torrent engine** (libtorrent via jlibtorrent, prebuilt natives —
-  no NDK needed): paste a **magnet link or info hash** in *Library → Torrent*
-  and stream directly, or tap a `magnet:` link in any browser app to open NOVA.
-  Sequential downloading with first/last-piece priority, so playback starts
-  fast and seeking stays responsive while the download continues.
-- **Open torrents from outside the app** — Android VIEW intents for `magnet:`
-  links are handled end-to-end (cold and warm start).
-- **Torrent downloads manager** — Settings → *Data & privacy* lists what is on
-  disk (sizes, file counts) with per-torrent delete and clear-all. Streamed
-  torrents are kept on disk for **instant resume** from the watch history.
-- **Debrid integration (optional)** — Real-Debrid / AllDebrid / TorBox keys
-  resolve cached torrents to instant direct URLs; the on-device engine is the
-  automatic fallback.
-- Direct metadata providers: **TMDB** (built-in key, BYO override), **AniList**,
-  and a six-provider ratings aggregate (IMDb, Rotten Tomatoes, Metacritic,
-  TMDB, Trakt, MDBList) with local caching.
-- **Trakt & Simkl** device-flow linking, watchlist/history import, and playback
-  scrobbling — all straight from the device.
-- **NOVA Sync** — accountless cross-device sync through a dedicated Postgres
-  (Supabase) instance using a least-privilege role. Settings, watchlist, lists,
-  watch history, and add-ons sync per device identity; nothing to sign up for.
-- Live TV (M3U), calendar, anime, kids, catalogs, custom lists, statistics.
-- media_kit playback stack (MKV/TS/RMVB/FLV and more), subtitle and audio track
-  switching, external add-on subtitles, torrent HUD (speed / peers / progress).
-- Arabic RTL and English with live direction switching, light and premium dark themes, phone and
-  tablet layouts.
+## Discover and watch
 
-## Project layout
+NOVA brings catalogs, add-ons, playback, and your library together on phones and tablets. Browse in Arabic or English, connect the services you use, and customize the experience for your profile.
 
-`lib/core` — API clients (NoorApi), models, catalog repository, torrent engine
-bridge (`torrent/`), device sync (`sync/`), app state, and design tokens.
-`lib/features` — one folder per screen group (home, media, player, torrent,
-library, live_tv, anime, kids, calendar, catalog, settings, shell).
-`lib/shared` — reusable widgets.
+- **Discover** movies, series, anime, and live TV through installed add-ons and catalogs, with search, recommendations, and a calendar.
+- **Play your way** with audio and subtitle selection, chapter and skip markers, and configurable playback settings. Android Core supports Media3 and libmpv; iOS uses libmpv.
+- **Bring your sources** using add-ons, supported Debrid services, or local torrent playback. Availability depends on the platform and source.
+- **Keep your library together** with watch history, Continue Watching, watchlists, custom lists, and optional linked services including Trakt, Simkl, AniList, MyAnimeList, MDBList, and Letterboxd.
+- **Watch together** in a shared room with synchronized playback, chat, and optional source locking. A full NOVA account and active profile are required.
+- **Share collections** with other accounts and manage member permissions.
+- **Make it yours** with profiles, Kids features, light and dark themes, optional OLED mode, and Arabic RTL and English layouts.
 
-## Run and build
+NOVA uses Supabase Auth and an active profile for the app. Account and profile data sync through Supabase; provider credentials are kept in secure on-device storage. NOVA does not host or distribute media.
+
+## Download
+
+Download the latest Android APK from [GitHub Releases](https://github.com/novastremio/nova-mobile/releases/latest). Android checks for updates using the manifest in this repository.
+
+iOS builds require macOS and Xcode. The Codemagic workflow produces an unsigned IPA for signing with iLoader; an installable iOS update destination is not currently configured.
+
+## Development
+
+The repository root is the Flutter project. CI uses Flutter `3.49.0-0.2.pre` at revision `38ec981bad973156ad05bdef0aa8e82d1a58905b` and Java 17.
 
 ```sh
-cd NOVA  # repository root is the Flutter project
+git clone https://github.com/novastremio/nova-mobile.git
+cd nova-mobile
 flutter pub get
 flutter run
+```
+
+Run the analyzer and tests with:
+
+```sh
+flutter analyze --no-pub
+flutter test --no-pub
+```
+
+Build Android release packages with:
+
+```sh
 flutter build apk --release
 flutter build appbundle --release
 ```
 
-Build the iOS app on macOS with Xcode installed:
+Android uses the signing credentials in `android/key.properties` when configured. Without them, the build falls back to a debug signing key. An update installed over an existing app must use the same signing certificate.
+
+For iOS, use macOS with Xcode and prepare the local torrent framework before building. The project targets iOS 18 and later.
 
 ```sh
-flutter build ios --release
+bash tool/prepare_ios_torrent.sh
+flutter pub get
+flutter build ios --release --no-codesign
 ```
 
-Torrent playback: on Android the embedded libtorrent engine handles magnets
-natively; on platforms without the engine, connect a Debrid service in
-Settings → Integrations.
+The app has default Supabase project settings. For a separate backend, provide `NOVA_SUPABASE_URL` and `NOVA_SUPABASE_PUBLISHABLE_KEY` as Flutter `--dart-define` values and configure the backend described in [Supabase setup](supabase/README.md).
 
-The checked-in Android release build uses the debug signing key until a private
-release keystore is configured. Do not upload that build to an app store.
+## Project structure
+
+| Path | Contents |
+| --- | --- |
+| `lib/core/` | API clients, models, state, authentication, sync, playback services, and theme |
+| `lib/features/` | App screens and feature-specific logic |
+| `lib/shared/` | Reusable widgets |
+| `lib/l10n/` | Arabic and English translations |
+| `android/`, `ios/` | Native platform projects |
+| `packages/` | Local Flutter and native packages |
+| `supabase/` | Database migrations, functions, and deployment notes |
+| `cloudflare/watch-party/` | Optional Watch Party relay worker |
+| `prototype/` | Interactive React design prototype |
+| `test/` | Flutter unit and widget tests |
+
+More information is available in the [Watch Party guide](docs/watch-party/README.md), [shared collections guide](docs/shared-collections/README.md), [Letterboxd guide](docs/letterboxd/README.md), and [prototype README](prototype/README.md).
